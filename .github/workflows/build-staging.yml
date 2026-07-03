@@ -61,14 +61,34 @@ jobs:
           tags: local/frappe-staging:test
 
       - name: Smoke test
+        # run: |
+        #   docker run --rm --entrypoint bash local/frappe-staging:test -lc "
+        #     test -d /home/frappe/frappe-bench/apps/frappe &&
+        #     test -d /home/frappe/frappe-bench/apps/erpnext &&
+        #     test -d /home/frappe/frappe-bench/apps/helpdesk &&
+        #     test -d /home/frappe/frappe-bench/apps/telephony &&
+        #     test -d /home/frappe/frappe-bench/apps/isp_ops
+        #   "
         run: |
-          docker run --rm --entrypoint bash local/frappe-staging:test -lc "
-            test -d /home/frappe/frappe-bench/apps/frappe &&
-            test -d /home/frappe/frappe-bench/apps/erpnext &&
-            test -d /home/frappe/frappe-bench/apps/helpdesk &&
-            test -d /home/frappe/frappe-bench/apps/telephony &&
-            test -d /home/frappe/frappe-bench/apps/isp_ops
-          "
+          docker run --rm --entrypoint bash "$TEST_IMAGE" -lc '
+            echo "===== Installed Apps ====="
+            ls -lah /home/frappe/frappe-bench/apps
+
+            echo
+            echo "===== Checking ====="
+
+            for app in frappe erpnext helpdesk telephony isp_ops; do
+              if [ -d "/home/frappe/frappe-bench/apps/$app" ]; then
+                echo "✅ $app"
+              else
+                echo "❌ $app"
+              fi
+            done
+
+            echo
+            echo "===== Bench Version ====="
+            bench version || true
+          '
 
       - name: Push image
         uses: docker/build-push-action@v6
