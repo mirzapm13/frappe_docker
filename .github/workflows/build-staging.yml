@@ -26,6 +26,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Create apps.json
+        run: |
+          mkdir -p .github/tmp
+          cp staging-apps.json .github/tmp/apps.json
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -56,8 +61,8 @@ jobs:
             FRAPPE_IMAGE_PREFIX=frappe
             FRAPPE_PATH=https://github.com/frappe/frappe
             FRAPPE_BRANCH=version-16
-          secrets: |
-            id=apps_json,src=${{ env.APPS_JSON_PATH }}
+          secret-files: |
+            apps_json=.github/tmp/apps.json
           load: true
           tags: local/frappe-staging:test
 
@@ -100,8 +105,8 @@ jobs:
             FRAPPE_IMAGE_PREFIX=frappe
             FRAPPE_PATH=https://github.com/frappe/frappe
             FRAPPE_BRANCH=version-16
-          secrets: |
-            id=apps_json,src=${{ env.APPS_JSON_PATH }}
+          secret-files: |
+            apps_json=.github/tmp/apps.json
           push: true
           platforms: linux/amd64
           tags: |
