@@ -26,6 +26,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug workspace
+        run: |
+          ls -lah
+          find . -name "staging-apps.json" -type f || true
       - name: Create apps.json
         run: |
           mkdir -p .github/tmp
