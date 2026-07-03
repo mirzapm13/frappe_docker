@@ -30,8 +30,8 @@ jobs:
       #   run: |
       #     ls -lah
       #     find . -name "staging-apps.json" -type f || true
-      - name: Debug file path
-        run: ls -R
+      - name: Check working directory
+        run: pwd && ls -la
       - name: Create apps.json
         run: |
           mkdir -p .github/tmp
