@@ -1,0 +1,87 @@
+name: Build Staging Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "staging-apps.json"
+      - ".github/workflows/build-staging.yml"
+      - "images/**"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  BUILDER_DIR: .
+  APPS_JSON_PATH: .github/tmp/apps.json
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/frappe-staging
+  IMAGE_TAG: latest
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Prepare apps.json
+        run: |
+          mkdir -p .github/tmp
+          cp staging-apps.json ${{ env.APPS_JSON_PATH }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: images/layered/Containerfile
+          build-args: |
+            FRAPPE_IMAGE_PREFIX=frappe
+            FRAPPE_PATH=https://github.com/frappe/frappe
+            FRAPPE_BRANCH=version-16
+          secrets: |
+            id=apps_json,src=${{ env.APPS_JSON_PATH }}
+          load: true
+          tags: local/frappe-staging:test
+
+      - name: Smoke test
+        run: |
+          docker run --rm --entrypoint bash local/frappe-staging:test -lc "
+            test -d /home/frappe/frappe-bench/apps/frappe &&
+            test -d /home/frappe/frappe-bench/apps/erpnext &&
+            test -d /home/frappe/frappe-bench/apps/helpdesk &&
+            test -d /home/frappe/frappe-bench/apps/telephony &&
+            test -d /home/frappe/frappe-bench/apps/isp_ops
+          "
+
+      - name: Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: images/layered/Containerfile
+          build-args: |
+            FRAPPE_IMAGE_PREFIX=frappe
+            FRAPPE_PATH=https://github.com/frappe/frappe
+            FRAPPE_BRANCH=version-16
+          secrets: |
+            id=apps_json,src=${{ env.APPS_JSON_PATH }}
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
