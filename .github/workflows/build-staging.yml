@@ -19,6 +19,7 @@ env:
   APPS_JSON_PATH: .github/tmp/apps.json
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/frappe-staging
   IMAGE_TAG: latest
+  TEST_IMAGE: local/frappe-staging:test
 
 jobs:
   build:
